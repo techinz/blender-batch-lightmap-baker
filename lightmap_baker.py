@@ -184,6 +184,11 @@ class BakeSettings(bpy.types.PropertyGroup):
         min=0,
         max=64
     )
+    use_gpu: bpy.props.BoolProperty(
+        name="Use GPU",
+        description="Use GPU for baking (much faster if available)",
+        default=True
+    )
     output_dir: bpy.props.StringProperty(
         name="Output Directory",
         description="Directory to save baked textures",
@@ -224,6 +229,7 @@ class BakePanel(bpy.types.Panel):
         row.prop(settings, "image_size")
         row.prop(settings, "margin")
         box.prop(settings, "samples")
+        box.prop(settings, "use_gpu")
         box.prop(settings, "output_dir")
 
         # Operations section
@@ -286,12 +292,18 @@ class ShadingManager:
         scene.render.engine = 'CYCLES'  # baking works only with CYCLES
         scene.cycles.samples = settings.samples
 
+        # use GPU if enabled
+        if settings.use_gpu:
+            scene.cycles.device = 'GPU'
+        else:
+            scene.cycles.device = 'CPU'
+
         obj = bpy.data.objects.get(name)
         if not Utils.is_valid_mesh(obj):
             self.report_message({'WARNING'}, f"{name}: skipped (not found or not mesh)", show_popup=True)
             return
 
-        self.report_message({'INFO'}, f"{name}: baking object")
+        self.report_message({'INFO'}, f"{name}: baking object", show_popup=True)
 
         Utils.select_object(obj)  # select the object and set it as active
 
